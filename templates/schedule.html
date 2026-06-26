@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Schedule — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  <div>
+    <div class="page-title">Upcoming races</div>
+    <div class="page-sub">Auto-detected from TrackMaster Virtual Stable — US and Canadian tracks</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <form method="POST" action="{{ url_for('sync_trackmaster_entries') }}" style="margin:0">
+      <button class="btn btn-secondary" type="submit">
+        <i class="ti ti-refresh" style="font-size:13px" aria-hidden="true"></i> Check TrackMaster
+      </button>
+    </form>
+    <a class="btn btn-primary" href="{{ url_for('add_upcoming_race') }}">
+      <i class="ti ti-plus" style="font-size:13px" aria-hidden="true"></i> Add manually
+    </a>
+  </div>
+</div>
+
+<div class="card" style="background:#E6F1FB;border-color:#B5D4F4;margin-bottom:16px">
+  <div style="display:flex;align-items:flex-start;gap:10px">
+    <i class="ti ti-info-circle" style="font-size:16px;color:#185FA5;flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
+    <div style="font-size:13px;color:#0C447C;line-height:1.6">
+      <strong>How this works:</strong> Set up a free <a href="https://www.trackmaster.com/products/harness/virtual_stable" target="_blank" style="color:#185FA5">TrackMaster Virtual Stable</a> account, add your horses, and point notifications to your app Gmail. Entry emails arrive automatically — this page reads them and adds races here. No manual entry needed.
+    </div>
+  </div>
+</div>
+
+{% if upcoming %}
+<div class="card">
+  <div class="card-title">
+    <i class="ti ti-calendar" style="font-size:15px;color:#185FA5" aria-hidden="true"></i>
+    Upcoming — {{ upcoming|length }} entr{{ 'y' if upcoming|length == 1 else 'ies' }}
+  </div>
+  {% for race in upcoming %}
+  {% set days = (race.race_date - today).days %}
+  <div style="display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:0.5px solid #F1EFE8">
+    <div style="width:48px;height:48px;border-radius:8px;background:{% if days <= 2 %}#E6F1FB{% elif days <= 7 %}#EAF3DE{% else %}#F1EFE8{% endif %};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="font-size:18px;font-weight:500;color:{% if days <= 2 %}#0C447C{% elif days <= 7 %}#27500A{% else %}#5F5E5A{% endif %};line-height:1">{{ race.race_date.strftime('%-d') }}</div>
+      <div style="font-size:9px;font-weight:500;text-transform:uppercase;color:{% if days <= 2 %}#185FA5{% elif days <= 7 %}#3B6D11{% else %}#888780{% endif %};margin-top:2px">{{ race.race_date.strftime('%b') }}</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:500;color:#1A1A1A;margin-bottom:3px">
+        <a href="{{ url_for('horse_detail', horse_id=race.horse.id) }}" style="color:#1A1A1A">{{ race.horse.name }}</a>
+        — {{ race.track }}
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#5F5E5A;margin-bottom:6px">
+        {% if race.race_number %}<span><i class="ti ti-road" style="font-size:11px;vertical-align:-1px;margin-right:3px" aria-hidden="true"></i>Race {{ race.race_number }}</span>{% endif %}
+        {% if race.post_time %}<span><i class="ti ti-clock" style="font-size:11px;vertical-align:-1px;margin-right:3px" aria-hidden="true"></i>{{ race.post_time }}</span>{% endif %}
+        {% if race.purse %}<span><i class="ti ti-currency-dollar" style="font-size:11px;vertical-align:-1px;margin-right:3px" aria-hidden="true"></i>Purse ${{ '{:,.0f}'.format(race.purse) }}</span>{% endif %}
+        {% if race.post_position %}<span>Post {{ race.post_position }}</span>{% endif %}
+        {% if race.driver %}<span><i class="ti ti-user" style="font-size:11px;vertical-align:-1px;margin-right:3px" aria-hidden="true"></i>{{ race.driver }}</span>{% endif %}
+        {% if race.source == 'trackmaster' %}<span class="badge badge-blue">TrackMaster</span>{% else %}<span class="badge badge-gray">Manual</span>{% endif %}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        {% if days == 0 %}<span class="badge" style="background:#FCE4EC;color:#C00000">Today</span>
+        {% elif days == 1 %}<span class="badge" style="background:#FFF2CC;color:#9C5700">Tomorrow</span>
+        {% elif days <= 7 %}<span class="badge badge-blue">{{ days }} days away</span>
+        {% else %}<span class="badge badge-gray">{{ days }} days away</span>{% endif %}
+        {% set notif_count = race.notifications|selectattr('sent_at')|list|length %}
+        {% if notif_count %}<span class="badge badge-green"><i class="ti ti-bell" style="font-size:10px;margin-right:3px" aria-hidden="true"></i>{{ notif_count }} notified</span>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('notify_owners', race_id=race.id) }}">
+        <i class="ti ti-bell" style="font-size:12px" aria-hidden="true"></i> Notify
+      </a>
+      <form method="POST" action="{{ url_for('delete_upcoming_race', race_id=race.id) }}" onsubmit="return confirm('Remove this race entry?')">
+        <button class="btn btn-danger btn-sm" type="submit"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i></button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+  <i class="ti ti-calendar" style="font-size:36px;color:var(--color-text-tertiary);margin-bottom:12px" aria-hidden="true"></i>
+  <p>No upcoming races detected yet.</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px">Set up TrackMaster Virtual Stable with your horses and entries will appear here automatically.</p>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <a class="btn btn-primary" href="https://www.trackmaster.com/products/harness/virtual_stable" target="_blank">Set up TrackMaster &#x2197;</a>
+    <a class="btn btn-secondary" href="{{ url_for('add_upcoming_race') }}">Add manually</a>
+  </div>
+</div>
+{% endif %}
+
+{% if past_entries %}
+<div class="card" style="margin-top:8px">
+  <div class="card-title" style="color:var(--color-text-secondary)">Recent past entries</div>
+  <table>
+    <thead><tr><th>Date</th><th>Horse</th><th>Track</th><th>Race</th><th>Purse</th></tr></thead>
+    <tbody>
+    {% for r in past_entries %}
+    <tr style="opacity:.7">
+      <td>{{ r.race_date.strftime('%b %-d, %Y') }}</td>
+      <td>{{ r.horse.name }}</td>
+      <td>{{ r.track }}</td>
+      <td>{{ r.race_number or '—' }}</td>
+      <td>{% if r.purse %}${{ '{:,.0f}'.format(r.purse) }}{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

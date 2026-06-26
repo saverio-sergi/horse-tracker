@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}TrackIT — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-title">TrackIT connection</div>
+  <div class="page-sub">Connect your account to pull race results automatically after every race night.</div>
+</div>
+
+{% if current_user.trackit_connected %}
+<!-- ══ CONNECTED STATE ══ -->
+<div class="card" style="border-color:#C0DD97;background:#F9FCF5">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div style="width:40px;height:40px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px">&#x2714;&#xFE0F;</div>
+    <div>
+      <div style="font-size:15px;font-weight:500;color:#1A1A1A">Connected as <strong>{{ current_user.trackit_username }}</strong></div>
+      <div style="font-size:12px;color:#3B6D11">
+        {% if current_user.trackit_last_sync %}
+          Last synced {{ current_user.trackit_last_sync.strftime('%b %d at %-I:%M %p') }}
+        {% else %}Never synced yet{% endif %}
+      </div>
+    </div>
+    <span class="badge badge-green" style="margin-left:auto">Active</span>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-val" style="color:#3B6D11">{{ current_user.trackit_credits or '—' }}</div><div class="stat-label">Credits remaining</div></div>
+    <div class="stat-card"><div class="stat-val">{{ horses|length }}</div><div class="stat-label">Horses tracked</div></div>
+    <div class="stat-card"><div class="stat-val">~2</div><div class="stat-label">Credits per sync</div></div>
+    <div class="stat-card"><div class="stat-val">{{ syncs|length }}</div><div class="stat-label">Total syncs</div></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <form method="POST" action="{{ url_for('trackit_sync_now') }}">
+      <button class="btn btn-primary" type="submit">&#x21BA; Sync now</button>
+    </form>
+    <form method="POST" action="{{ url_for('trackit_disconnect') }}" onsubmit="return confirm('Disconnect TrackIT? You can reconnect at any time.')">
+      <button class="btn btn-danger" type="submit">Disconnect</button>
+    </form>
+  </div>
+
+  {% if syncs %}
+  <div class="divider"></div>
+  <div class="card-title">Recent syncs</div>
+  <table>
+    <thead><tr><th>Date &amp; time</th><th>Track</th><th>Races added</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for s in syncs %}
+    <tr>
+      <td>{{ s.synced_at.strftime('%b %d, %Y at %-I:%M %p') }}</td>
+      <td>{{ s.track or '—' }}</td>
+      <td>{{ s.races_added }}</td>
+      <td><span class="badge badge-{{ 'green' if s.status=='success' else 'red' }}">{{ s.status }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+{% else %}
+<!-- ══ NOT CONNECTED STATE ══ -->
+<div class="card" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+    <div style="width:40px;height:40px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888780">&#x1F517;</div>
+    <div>
+      <div style="font-size:15px;font-weight:500">Not connected</div>
+      <div style="font-size:12px;color:#888780">Race results must be entered manually</div>
+    </div>
+    <span class="badge badge-gray" style="margin-left:auto">Not set up</span>
+  </div>
+
+  <!-- Tab switcher -->
+  <div id="ti-tabs" style="display:flex;gap:0;border-bottom:0.5px solid #D3D1C7;margin-bottom:20px">
+    <button class="ti-tab active-tab" onclick="showTab('login')" style="font-size:13px;font-weight:500;padding:8px 18px;cursor:pointer;border:none;background:none;color:#1A1A1A;border-bottom:2px solid #1F3A5F">I have an account</button>
+    <button class="ti-tab" onclick="showTab('signup')" style="font-size:13px;font-weight:500;padding:8px 18px;cursor:pointer;border:none;background:none;color:#5F5E5A;border-bottom:2px solid transparent">I need an account</button>
+  </div>
+
+  <!-- SIGN IN TAB -->
+  <div id="tab-login">
+    <form method="POST" action="{{ url_for('trackit_connect') }}">
+      <div class="form-group">
+        <label class="form-label">TrackIT username</label>
+        <input class="form-input" type="text" name="trackit_username" placeholder="Your TrackIT username" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TrackIT password</label>
+        <input class="form-input" type="password" name="trackit_password" placeholder="Your TrackIT password" required autocomplete="current-password">
+        <div class="form-hint">&#x1F512; Stored securely. Only ever sent to TrackIT's servers.</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+        <button class="btn btn-primary" type="submit">Connect TrackIT account</button>
+        <a href="{{ TRACKIT_FORGOT_URL }}" target="_blank" style="font-size:12px;color:#5F5E5A">Forgot password? &#x2197;</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- CREATE ACCOUNT TAB -->
+  <div id="tab-signup" style="display:none">
+    <div style="background:#E6F1FB;border-radius:8px;padding:12px 14px;font-size:13px;color:#0C447C;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px">
+      <span>&#x2197;</span>
+      <span>This opens the Standardbred Canada website in a new tab. Come back here once you have created your account and use the sign-in tab to connect.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+      {% for n, step in [('1','Click the button below — the TrackIT registration page opens in a new tab'),
+                         ('2','Fill in your name, email, and choose a username and password'),
+                         ('3','Choose your membership — pay-per-query works for most stables ($0 to start)'),
+                         ('4','Come back to this tab, click "I have an account" and sign in')] %}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="width:22px;height:22px;border-radius:50%;background:#E6F1FB;color:#0C447C;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ n }}</div>
+        <div style="font-size:13px;color:#5F5E5A;line-height:1.55;padding-top:2px">{{ step }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="https://trackit.standardbredcanada.ca" target="_blank" class="btn btn-primary">Open TrackIT registration &#x2197;</a>
+      <button class="btn btn-secondary" onclick="showTab('login')">I have created my account — sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- What is TrackIT info box -->
+<div class="card" style="background:#F9FCFF;border-color:#B5D4F4">
+  <div class="card-title" style="color:#0C447C">What is TrackIT?</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    {% for item in ["TrackIT is Standardbred Canada's official race results database",
+                    "Covers all North American harness tracks — finish times, purses, and full race history",
+                    "Once connected, race results sync automatically after every race night",
+                    "Membership from Standardbred Canada — pay-per-query or annual plan",
+                    "Without TrackIT you can still enter race results manually at any time"] %}
+    <div style="display:flex;gap:8px;font-size:13px;color:#0C447C">
+      <span style="flex-shrink:0">&#x2713;</span><span>{{ item }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+function showTab(id){
+  document.getElementById('tab-login').style.display  = id==='login'  ? 'block' : 'none';
+  document.getElementById('tab-signup').style.display = id==='signup' ? 'block' : 'none';
+  document.querySelectorAll('.ti-tab').forEach((t,i)=>{
+    const active = (i===0 && id==='login') || (i===1 && id==='signup');
+    t.style.color  = active ? '#1A1A1A' : '#5F5E5A';
+    t.style.borderBottomColor = active ? '#1F3A5F' : 'transparent';
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Harness Horse Tracker{% endblock %}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F7FA;color:#1A1A1A;min-height:100vh}
+a{color:#185FA5;text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{background:#1F3A5F;padding:0 24px;display:flex;align-items:center;gap:16px;height:52px;position:sticky;top:0;z-index:100}
+.nav-brand{font-size:15px;font-weight:500;color:#fff}
+.nav-links{display:flex;gap:4px;margin-left:8px}
+.nav-link{font-size:13px;color:#B5D4F4;padding:6px 12px;border-radius:6px;transition:background .15s}
+.nav-link:hover,.nav-link.active{background:rgba(255,255,255,.12);color:#fff;text-decoration:none}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-stable{font-size:12px;color:#85B7EB}
+.nav-btn{font-size:12px;color:#B5D4F4;padding:5px 12px;border:0.5px solid rgba(255,255,255,.25);border-radius:20px}
+.nav-btn:hover{background:rgba(255,255,255,.1);text-decoration:none;color:#fff}
+.main{max-width:1000px;margin:0 auto;padding:28px 20px}
+.page-header{margin-bottom:24px}
+.page-title{font-size:22px;font-weight:500;margin-bottom:4px}
+.page-sub{font-size:14px;color:#5F5E5A}
+.card{background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:20px 22px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:500;margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s;text-decoration:none}
+.btn:hover{opacity:.88}
+.btn-primary{background:#1F3A5F;color:#fff}
+.btn-secondary{background:#fff;color:#1A1A1A;border:0.5px solid #D3D1C7}
+.btn-danger{background:none;color:#A32D2D;border:0.5px solid #F09595}
+.btn-sm{padding:5px 10px;font-size:12px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;font-weight:500;color:#5F5E5A;margin-bottom:5px}
+.form-input,.form-select{width:100%;padding:9px 12px;border:0.5px solid #D3D1C7;border-radius:8px;font-size:13px;color:#1A1A1A;background:#fff}
+.form-input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.08)}
+.form-hint{font-size:11px;color:#888780;margin-top:4px}
+.flash{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:8px}
+.flash-success{background:#EAF3DE;color:#27500A}
+.flash-error{background:#FCEBEB;color:#791F1F}
+.flash-info{background:#E6F1FB;color:#0C447C}
+.flash-warning{background:#FAEEDA;color:#633806}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px}
+.badge-green{background:#EAF3DE;color:#27500A}
+.badge-red{background:#FCEBEB;color:#791F1F}
+.badge-amber{background:#FAEEDA;color:#633806}
+.badge-gray{background:#F1EFE8;color:#5F5E5A}
+.badge-blue{background:#E6F1FB;color:#0C447C}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{background:#fff;border:0.5px solid #D3D1C7;border-radius:10px;padding:14px 16px}
+.stat-val{font-size:24px;font-weight:500;margin-bottom:2px}
+.stat-label{font-size:12px;color:#5F5E5A}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:500;color:#5F5E5A;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #D3D1C7}
+td{padding:11px 12px;border-bottom:0.5px solid #F1EFE8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAF8}
+.empty-state{text-align:center;padding:48px 24px;color:#888780}
+.divider{border:none;border-top:0.5px solid #D3D1C7;margin:20px 0}
+@media(max-width:640px){.grid-2,.grid-4{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<nav class="nav">
+  <div class="nav-brand">&#x1F40E; Harness Horse Tracker</div>
+  <div class="nav-links">
+    <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a class="nav-link {% if 'horse' in (request.endpoint or '') %}active{% endif %}" href="{{ url_for('horses') }}">Horses</a>
+    <a class="nav-link {% if 'trackit' in (request.endpoint or '') %}active{% endif %}" href="{{ url_for('trackit_settings') }}">TrackIT</a>
+    <a class="nav-link {% if request.endpoint=='settings' %}active{% endif %}" href="{{ url_for('settings') }}">Settings</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-stable">{{ current_user.stable_name }}</span>
+    <a class="nav-btn" href="{{ url_for('logout') }}">Sign out</a>
+  </div>
+</nav>
+{% endif %}
+<main class="main">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}</div>
+{% endfor %}{% endif %}
+{% endwith %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

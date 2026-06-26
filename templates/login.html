@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Harness Horse Tracker{% endblock %}
+{% block content %}
+<div style="max-width:380px;margin:60px auto">
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:32px;margin-bottom:10px">&#x1F40E;</div>
+    <h1 style="font-size:22px;font-weight:500;margin-bottom:6px">Sign in to your stable</h1>
+    <p style="font-size:14px;color:#5F5E5A">Harness Horse Tracker</p>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" type="email" name="email" placeholder="you@example.com" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" placeholder="Your password" required>
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center;padding:10px">Sign in</button>
+    </form>
+  </div>
+  <p style="text-align:center;font-size:13px;color:#5F5E5A;margin-top:16px">Don't have an account? <a href="{{ url_for('signup') }}">Create one</a></p>
+</div>
+{% endblock %}

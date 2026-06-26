@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Ownership periods — {{ horse.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="font-size:13px;color:#888780;margin-bottom:4px">
+    <a href="{{ url_for('horse_detail', horse_id=horse.id) }}">{{ horse.name }}</a> / Ownership periods
+  </div>
+  <div class="page-title">Ownership periods — {{ horse.name }}</div>
+  <div class="page-sub">Each time you buy and sell this horse creates a separate period. Bills and races only appear in the period when you owned them.</div>
+</div>
+
+{% for period in horse.periods | sort(attribute='start_date') %}
+<div class="card" style="border-color:{% if period.active %}#C0DD97{% else %}#D3D1C7{% endif %};margin-bottom:12px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:{% if period.active %}#EAF3DE{% else %}#F1EFE8{% endif %};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:{% if period.active %}#27500A{% else %}#5F5E5A{% endif %}">{{ period.period_index }}</div>
+      <div>
+        <div style="font-size:14px;font-weight:500;color:#1A1A1A">{{ period.label }}</div>
+        <div style="font-size:12px;color:#5F5E5A">
+          {% if period.purchase_price %}Purchased: {{ current_user.currency }} ${{ '{:,.2f}'.format(period.purchase_price) }}{% if period.purchase_type %} via {{ period.purchase_type }}{% endif %}{% endif %}
+          {% if period.sale_price %} &nbsp;·&nbsp; Sold: {{ current_user.currency }} ${{ '{:,.2f}'.format(period.sale_price) }}{% if period.sale_type %} via {{ period.sale_type }}{% endif %}{% endif %}
+        </div>
+      </div>
+    </div>
+    <span class="badge {% if period.active %}badge-green{% else %}badge-gray{% endif %}">
+      {% if period.active %}Currently owned{% else %}Past ownership{% endif %}
+    </span>
+  </div>
+  <div style="display:flex;gap:16px;font-size:12px;color:#5F5E5A">
+    <span>{{ period.bills | length }} bill{{ 's' if period.bills | length != 1 else '' }}</span>
+    <span>{{ period.races | length }} race{{ 's' if period.races | length != 1 else '' }}</span>
+    {% if period.purchase_price and period.sale_price %}
+    {% set gain = period.sale_price - period.purchase_price %}
+    <span style="color:{% if gain >= 0 %}#3B6D11{% else %}#C00000{% endif %}">
+      Capital {% if gain >= 0 %}gain{% else %}loss{% endif %}: {{ current_user.currency }} ${{ '{:,.2f}'.format(gain|abs) }}
+    </span>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+<div class="divider"></div>
+
+{% if active_period %}
+<div class="card">
+  <div class="card-title"><i class="ti ti-cash" style="font-size:15px;color:#C00000;margin-right:6px" aria-hidden="true"></i>Record a sale — close current period</div>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px;line-height:1.55">
+    When you sell this horse, close the current ownership period. All bills and race results stay attached to this period. If you buy the horse again later, start a new period.
+  </p>
+  <form method="POST" id="close-form">
+    <input type="hidden" name="action" value="close_period">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">How sold *</label>
+        <select class="form-select" name="sale_type" id="sale-type" onchange="updateClaimNote()">
+          <option value="">Select...</option>
+          <option value="Claim">Claim race</option>
+          <option value="Private Sale">Private Sale</option>
+          <option value="Auction">Auction</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sale / claim date *</label>
+        <input class="form-input" type="date" name="sale_date" id="sale-date">
+        <div class="form-hint" id="date-hint">For a claim: enter the date of the race the horse was claimed in.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sale / claim price ({{ current_user.currency }})</label>
+        <input class="form-input" type="number" name="sale_price" step="0.01" min="0" placeholder="e.g. 20000">
+      </div>
+    </div>
+
+    <div id="claim-note" style="display:none;background:#E6F1FB;border-left:3px solid #185FA5;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:#0C447C;margin-bottom:14px;line-height:1.6">
+      <strong>Claiming race rule:</strong> The purse from the race the horse was claimed in stays with you — the previous owner. Enter the date of that race above. Any race result on that date will be recorded as a claim race in your history and its earnings will remain in this ownership period. Bills from that date onwards are the new owner's responsibility.
+    </div>
+
+    <button class="btn btn-danger" type="submit">Record sale &amp; close period</button>
+  </form>
+  <script>
+  function updateClaimNote(){
+    const t=document.getElementById('sale-type').value;
+    document.getElementById('claim-note').style.display=t==='Claim'?'block':'none';
+    document.getElementById('date-hint').textContent=t==='Claim'
+      ?'Enter the race date — the purse from this race stays with you.'
+      :'The date the sale was completed.';
+  }
+  </script>
+</div>
+{% else %}
+<div class="card" style="border-color:#C0DD97">
+  <div class="card-title"><i class="ti ti-horse" style="font-size:15px;color:#3B6D11;margin-right:6px" aria-hidden="true"></i>Start a new ownership period</div>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px;line-height:1.55">
+    You've bought this horse again. Starting a new period keeps these bills and race results completely separate from the previous ownership. TrackIT history will be re-imported for this period.
+  </p>
+  <form method="POST">
+    <input type="hidden" name="action" value="new_period">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">New purchase date</label>
+        <input class="form-input" type="date" name="purchase_date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Purchase price ({{ current_user.currency }})</label>
+        <input class="form-input" type="number" name="purchase_price" step="0.01" min="0" placeholder="e.g. 18000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">How acquired</label>
+        <select class="form-select" name="purchase_type">
+          <option value="">Select...</option>
+          <option>Private Sale</option><option>Claim</option><option>Auction</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Start new ownership period</button>
+  </form>
+</div>
+{% endif %}
+
+<div style="margin-top:12px">
+  <a class="btn btn-secondary" href="{{ url_for('horse_detail', horse_id=horse.id) }}">Back to {{ horse.name }}</a>
+</div>
+{% endblock %}

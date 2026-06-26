@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Settings — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">Settings</div></div>
+
+<div class="card">
+  <div class="card-title">Stable settings</div>
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Stable name</label>
+      <input class="form-input" type="text" name="stable_name" value="{{ current_user.stable_name }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Currency</label>
+      <select class="form-select" name="currency">
+        <option value="USD" {% if current_user.currency=="USD" %}selected{% endif %}>USD — US dollars</option>
+        <option value="CAD" {% if current_user.currency=="CAD" %}selected{% endif %}>CAD — Canadian dollars</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Save changes</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">
+    <i class="ti ti-tag" style="font-size:15px;color:#534AB7;margin-right:6px" aria-hidden="true"></i>
+    Gmail label filters — keep your inbox private
+  </div>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px;line-height:1.6">
+    The scanner only reads emails in these specific labels — it never touches your personal inbox.
+    Create each label in Gmail, then set up a filter to route emails automatically.
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div style="background:#E1F5EE;border-radius:var(--border-radius-md);padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+        <i class="ti ti-file-invoice-dollar" style="font-size:15px;color:#085041" aria-hidden="true"></i>
+        <span style="font-size:13px;font-weight:500;color:#085041">Bills label</span>
+      </div>
+      <div style="font-size:11px;color:#0F6E56;line-height:1.5">Apply to forwarded bill photos. From your farrier, vet, stable etc.</div>
+    </div>
+    <div style="background:#EEEDFE;border-radius:var(--border-radius-md);padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+        <i class="ti ti-trophy" style="font-size:15px;color:#3C3489" aria-hidden="true"></i>
+        <span style="font-size:13px;font-weight:500;color:#3C3489">Race reminders label</span>
+      </div>
+      <div style="font-size:11px;color:#534AB7;line-height:1.5">Auto-applied to TrackMaster entry emails. Set up a Gmail filter once.</div>
+    </div>
+  </div>
+
+  <form method="POST">
+    <input type="hidden" name="stable_name" value="{{ current_user.stable_name }}">
+    <input type="hidden" name="currency" value="{{ current_user.currency }}">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Bills label name</label>
+        <input class="form-input" type="text" name="gmail_label"
+               value="{{ current_user.gmail_label or 'HorseBills' }}"
+               placeholder="HorseBills">
+        <div class="form-hint">Apply this label to any bill you forward to your Gmail</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Race reminders label name</label>
+        <input class="form-input" type="text" name="trackmaster_label"
+               value="{{ current_user.trackmaster_label or 'RaceReminders' }}"
+               placeholder="RaceReminders">
+        <div class="form-hint">Auto-applied to TrackMaster emails via Gmail filter</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit" style="margin-top:14px">Save label settings</button>
+  </form>
+
+  <div style="margin-top:20px;border-top:0.5px solid var(--color-border-tertiary);padding-top:16px">
+    <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:12px">
+      <i class="ti ti-brand-google" style="font-size:14px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>
+      How to set up the Gmail filter for TrackMaster (do this once)
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      {% for n,step in [
+        ('1','In Gmail, click the search bar and then the filter icon (the sliders icon on the right of the search bar)'),
+        ('2','In the "From" field type:  trackmaster.com  — then click "Create filter"'),
+        ('3','Check "Apply the label" and select your Race Reminders label (create it first if needed)'),
+        ('4','Click "Create filter" — done. All future TrackMaster emails go straight to that label automatically'),
+      ] %}
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ n }}</div>
+        <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.55;padding-top:3px">{{ step }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="background:var(--color-background-success);border-left:3px solid var(--color-border-success);border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;padding:9px 12px;font-size:13px;color:var(--color-text-success);margin-top:12px;line-height:1.55">
+      Once the filter is set, every TrackMaster entry email lands in your Race Reminders label automatically — no action needed from you.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">TrackIT</div>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px">
+    Status: {% if current_user.trackit_connected %}
+    <span class="badge badge-green">Connected as {{ current_user.trackit_username }}</span>
+    {% else %}<span class="badge badge-gray">Not connected</span>{% endif %}
+  </p>
+  <a class="btn btn-secondary" href="{{ url_for('trackit_settings') }}">Manage TrackIT connection</a>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Harness Horse Tracker{% endblock %}
+{% block content %}
+<div style="text-align:center;padding:60px 20px 40px">
+  <div style="font-size:48px;margin-bottom:16px">&#x1F40E;</div>
+  <h1 style="font-size:28px;font-weight:500;margin-bottom:10px">Harness Horse Tracker</h1>
+  <p style="font-size:15px;color:#5F5E5A;max-width:480px;margin:0 auto 28px;line-height:1.6">Bills, races, and owner P&L — all in one place. Automatic bill scanning, TrackIT race sync, and per-owner earnings split.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <a class="btn btn-primary" href="{{ url_for('signup') }}" style="font-size:15px;padding:12px 24px">Get started — it's free</a>
+    <a class="btn btn-secondary" href="{{ url_for('login') }}" style="font-size:15px;padding:12px 24px">Sign in</a>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:800px;margin:0 auto">
+  {% for icon, title, desc in [
+    ('&#x1F4F7;','AI bill scanning','Forward a photo — bill logged in under a minute'),
+    ('&#x1F3C6;','TrackIT sync','Race results pulled automatically after every race night'),
+    ('&#x1F465;','Per-owner split','Any ownership percentage, tracked exactly'),
+    ('&#x1F4B0;','Real P&L','Purchase cost to race earnings — true return per owner'),
+  ] %}
+  <div class="stat-card" style="text-align:center;padding:20px 16px">
+    <div style="font-size:24px;margin-bottom:8px">{{ icon }}</div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px">{{ title }}</div>
+    <div style="font-size:12px;color:#5F5E5A;line-height:1.4">{{ desc }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

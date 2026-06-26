@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Add horse — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-title">Add a horse</div>
+  <div class="page-sub">Fill in the details below. You can update anything later.</div>
+</div>
+<div class="card">
+  <form method="POST" id="add-horse-form">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Horse name *</label>
+        <input class="form-input" type="text" name="name" placeholder="e.g. Northern Breeze" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gait</label>
+        <select class="form-select" name="gait">
+          <option>Pacer</option><option>Trotter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year foaled</label>
+        <input class="form-input" type="number" name="year_foaled" placeholder="e.g. 2021" min="1990" max="2030">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="card-title">Owners &amp; shares</div>
+    <div style="font-size:12px;color:#5F5E5A;margin-bottom:12px">Percentages must add up to exactly 100%.</div>
+    <div id="owners-list">
+      <div class="owner-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <input class="form-input" type="text" name="owner_name" placeholder="Owner name" style="flex:1" required>
+        <input class="form-input" type="number" name="owner_pct" placeholder="%" min="0.1" max="100" step="0.1" style="width:80px" required oninput="updatePctTotal()">
+        <span style="font-size:13px;color:#5F5E5A">%</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+      <button type="button" onclick="addOwner()" class="btn btn-secondary btn-sm">+ Add owner</button>
+      <span id="pct-total" style="font-size:13px;color:#5F5E5A">Total: 0%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="card-title">Purchase details <span style="font-weight:400;color:#888780;font-size:12px">— optional but recommended for accurate P&amp;L</span></div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Purchase price ({{ current_user.currency }})</label>
+        <input class="form-input" type="number" name="purchase_price" placeholder="e.g. 15000" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Purchase date</label>
+        <input class="form-input" type="date" name="purchase_date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">How acquired</label>
+        <select class="form-select" name="purchase_type">
+          <option value="">Select...</option>
+          <option>Private Sale</option><option>Claim</option><option>Auction</option><option>Bred</option><option>Gift</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" type="submit">Add horse</button>
+      <a class="btn btn-secondary" href="{{ url_for('horses') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+<script>
+function addOwner(){
+  const row = document.createElement('div');
+  row.className='owner-row';
+  row.style.cssText='display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  row.innerHTML=`<input class="form-input" type="text" name="owner_name" placeholder="Owner name" style="flex:1">
+    <input class="form-input" type="number" name="owner_pct" placeholder="%" min="0.1" max="100" step="0.1" style="width:80px" oninput="updatePctTotal()">
+    <span style="font-size:13px;color:#5F5E5A">%</span>
+    <button type="button" onclick="this.parentElement.remove();updatePctTotal()" style="background:none;border:none;color:#A32D2D;cursor:pointer;font-size:16px">&#x2715;</button>`;
+  document.getElementById('owners-list').appendChild(row);
+}
+function updatePctTotal(){
+  const vals=[...document.querySelectorAll('[name=owner_pct]')].map(i=>parseFloat(i.value)||0);
+  const total=vals.reduce((a,b)=>a+b,0);
+  const el=document.getElementById('pct-total');
+  el.textContent=`Total: ${total.toFixed(1)}%`;
+  el.style.color=Math.abs(total-100)<0.01?'#3B6D11':'#C00000';
+}
+</script>
+{% endblock %}

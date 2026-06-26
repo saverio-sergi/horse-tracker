@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Add race entry — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-title">Add a race entry</div>
+  <div class="page-sub">Entries from TrackMaster are added automatically. Use this for tracks or situations TrackMaster doesn't cover.</div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Horse *</label>
+        <select class="form-select" name="horse_id" required>
+          <option value="">Select horse...</option>
+          {% for h in horses %}<option value="{{ h.id }}">{{ h.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Race date *</label>
+        <input class="form-input" type="date" name="race_date" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Track / venue *</label>
+        <input class="form-input" type="text" name="track" placeholder="e.g. Batavia Downs" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Race number</label>
+        <input class="form-input" type="text" name="race_number" placeholder="e.g. 5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Post time</label>
+        <input class="form-input" type="text" name="post_time" placeholder="e.g. 7:30 PM ET">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Post position</label>
+        <input class="form-input" type="text" name="post_position" placeholder="e.g. 3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Purse ({{ current_user.currency }})</label>
+        <input class="form-input" type="number" name="purse" placeholder="e.g. 4500" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Driver</label>
+        <input class="form-input" type="text" name="driver" placeholder="e.g. Campbell, John">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" type="submit">Add race entry</button>
+      <a class="btn btn-secondary" href="{{ url_for('schedule') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

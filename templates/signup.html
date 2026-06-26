@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Create account — Harness Horse Tracker{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:48px auto">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:32px;margin-bottom:10px">&#x1F40E;</div>
+    <h1 style="font-size:22px;font-weight:500;margin-bottom:6px">Create your stable account</h1>
+    <p style="font-size:14px;color:#5F5E5A">Free to start — takes about 2 minutes</p>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Stable name</label>
+        <input class="form-input" type="text" name="stable_name" placeholder="e.g. Smith Racing Stable" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" type="email" name="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" placeholder="At least 8 characters" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Currency</label>
+        <select class="form-select" name="currency">
+          <option value="USD">USD — US dollars</option>
+          <option value="CAD">CAD — Canadian dollars</option>
+        </select>
+        <div class="form-hint">TrackIT data in CAD is converted automatically if you choose USD.</div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center;padding:10px">Create account</button>
+    </form>
+  </div>
+  <p style="text-align:center;font-size:13px;color:#5F5E5A;margin-top:16px">Already have an account? <a href="{{ url_for('login') }}">Sign in</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% set today = namespace(d=none) %}
+{% block title %}Dashboard — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+  <div>
+    <div class="page-title">{{ current_user.stable_name }}</div>
+    <div class="page-sub">Welcome back. Here's your stable at a glance.</div>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('add_horse') }}">+ Add horse</a>
+</div>
+<div class="grid-4" style="margin-bottom:20px">
+  <div class="stat-card"><div class="stat-val">{{ stats.horses }}</div><div class="stat-label">Active horses</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:{% if stats.unpaid_bills > 0 %}#C00000{% else %}#3B6D11{% endif %}">{{ stats.unpaid_bills }}</div><div class="stat-label">Unpaid bills</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:#3B6D11">{{ currency }} ${{ '{:,.0f}'.format(stats.total_earnings) }}</div><div class="stat-label">Total earnings</div></div>
+  <div class="stat-card">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <div style="width:8px;height:8px;border-radius:50%;background:{% if current_user.trackit_connected %}#3B6D11{% else %}#D3D1C7{% endif %}"></div>
+      <div style="font-size:12px;color:#5F5E5A">TrackIT</div>
+    </div>
+    <div style="font-size:13px;font-weight:500">{% if current_user.trackit_connected %}Connected{% else %}<a href="{{ url_for('trackit_settings') }}">Connect now</a>{% endif %}</div>
+  </div>
+</div>
+{% if horses %}
+<div class="card">
+  <div class="card-title">Your horses</div>
+  <table>
+    <thead><tr><th>Horse</th><th>Gait</th><th>Owners</th><th>Open bills</th><th></th></tr></thead>
+    <tbody>
+    {% for h in horses %}
+    <tr>
+      <td><a href="{{ url_for('horse_detail', horse_id=h.id) }}" style="font-weight:500">{{ h.name }}</a></td>
+      <td><span class="badge badge-gray">{{ h.gait }}</span></td>
+      <td style="font-size:12px;color:#5F5E5A">
+        {% for o in h.ownerships %}{{ o.owner_name }} ({{ o.pct|int }}%){% if not loop.last %}, {% endif %}{% endfor %}
+      </td>
+      <td>
+        {% set open = namespace(n=0) %}
+        {% for b in h.bills %}{% for p in b.payments %}{% if not p.paid %}{% set open.n = open.n + 1 %}{% endif %}{% endfor %}{% endfor %}
+        {% if open.n > 0 %}<span class="badge badge-red">{{ open.n }} unpaid</span>
+        {% else %}<span class="badge badge-green">All paid</span>{% endif %}
+      </td>
+      <td><a class="btn btn-secondary btn-sm" href="{{ url_for('horse_detail', horse_id=h.id) }}">View</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty-state">
+  <p>No horses yet. Add your first horse to get started.</p>
+  <a class="btn btn-primary" href="{{ url_for('add_horse') }}">+ Add your first horse</a>
+</div>
+{% endif %}
+
+{% if upcoming_this_week %}
+<div class="card">
+  <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+    <span><i class="ti ti-calendar" style="font-size:15px;color:#185FA5;margin-right:6px" aria-hidden="true"></i>Racing this week</span>
+    <a href="{{ url_for('schedule') }}" style="font-size:12px;color:#185FA5">View all</a>
+  </div>
+  {% for r in upcoming_this_week %}
+  {% set days = (r.race_date - today).days if today is defined else 0 %}
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid #F1EFE8">
+    <div style="width:8px;height:8px;border-radius:50%;background:{% if loop.index==1 %}#185FA5{% elif loop.index==2 %}#3B6D11{% else %}#854F0B{% endif %};flex-shrink:0"></div>
+    <div style="font-size:12px;font-weight:500;color:#1A1A1A;flex:1">{{ r.horse.name }}</div>
+    <div style="font-size:11px;color:#5F5E5A">{{ r.track }}{% if r.race_number %} · Race {{ r.race_number }}{% endif %}</div>
+    <div style="font-size:11px;color:#5F5E5A;text-align:right;flex-shrink:0">{{ r.race_date.strftime('%b %-d') }}{% if r.post_time %} · {{ r.post_time }}{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if not current_user.trackit_connected %}
+<div class="card" style="background:#F9FCFF;border-color:#B5D4F4">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:14px;font-weight:500;color:#0C447C">Connect TrackIT for automatic race results</div>
+      <div style="font-size:13px;color:#185FA5;margin-top:3px">No more entering races by hand — results sync after every race night.</div>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('trackit_settings') }}">Connect TrackIT</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

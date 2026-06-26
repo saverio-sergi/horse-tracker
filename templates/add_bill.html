@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Add bill — {{ horse.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="font-size:13px;color:#888780;margin-bottom:4px"><a href="{{ url_for('horse_detail', horse_id=horse.id) }}">{{ horse.name }}</a> / Add bill</div>
+  <div class="page-title">Add a bill</div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" name="date" value="{{ today }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" name="category">
+          {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vendor / business name</label>
+        <input class="form-input" type="text" name="vendor" placeholder="e.g. Bob's Horseshoeing">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount ({{ current_user.currency }}) *</label>
+        <input class="form-input" type="number" name="amount" placeholder="0.00" step="0.01" min="0" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Short description</label>
+      <input class="form-input" type="text" name="description" placeholder="e.g. May shoeing, Coggins test">
+    </div>
+    <div style="background:#E6F1FB;border-radius:8px;padding:10px 14px;font-size:13px;color:#0C447C;margin-bottom:16px">
+      This bill will be split automatically: {% for o in horse.ownerships %}{{ o.owner_name }} {{ o.pct|int }}%{% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" type="submit">Add bill</button>
+      <a class="btn btn-secondary" href="{{ url_for('horse_detail', horse_id=horse.id) }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ horse.name }} — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  <div>
+    <div style="font-size:13px;color:#888780;margin-bottom:4px"><a href="{{ url_for('horses') }}">Horses</a> / {{ horse.name }}</div>
+    <div class="page-title">{{ horse.name }}</div>
+    <div class="page-sub">{{ horse.gait }} &nbsp;·&nbsp; Foaled {{ horse.year_foaled or '—' }} &nbsp;·&nbsp; {{ horse.horse_id }}</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a class="btn btn-primary" href="{{ url_for('add_bill', horse_id=horse.id) }}">+ Add bill</a>
+  </div>
+</div>
+
+{% if horse.purchase_price %}
+<div class="card" style="background:#F9FCF5;border-color:#C0DD97">
+  <div class="card-title">Purchase &amp; sale</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
+    <div><div style="font-size:11px;color:#5F5E5A;margin-bottom:2px">Purchased</div><strong>{{ currency }} ${{ '{:,.2f}'.format(horse.purchase_price) }}</strong>{% if horse.purchase_date %} on {{ horse.purchase_date.strftime('%b %d, %Y') }}{% endif %}{% if horse.purchase_type %} via {{ horse.purchase_type }}{% endif %}</div>
+    {% if horse.sale_price %}<div><div style="font-size:11px;color:#5F5E5A;margin-bottom:2px">Sold</div><strong>{{ currency }} ${{ '{:,.2f}'.format(horse.sale_price) }}</strong>{% if horse.sale_date %} on {{ horse.sale_date.strftime('%b %d, %Y') }}{% endif %}</div>
+    <div><div style="font-size:11px;color:#5F5E5A;margin-bottom:2px">Capital gain/loss</div><strong style="color:{% if horse.sale_price > horse.purchase_price %}#3B6D11{% else %}#C00000{% endif %}">{{ currency }} ${{ '{:,.2f}'.format(horse.sale_price - horse.purchase_price) }}</strong></div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-title">Bills &amp; expenses</div>
+  {% if bills %}
+  <table>
+    <thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Amount</th>{% for o in horse.ownerships %}<th>{{ o.owner_name }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for b in bills %}
+    <tr style="background:{% if b.needs_review %}#FFF8E8{% endif %}">
+      <td>{{ b.date.strftime('%b %d, %Y') if b.date else '—' }}</td>
+      <td><span class="badge badge-gray">{{ b.category }}</span></td>
+      <td>{{ b.vendor }}{% if b.description %}<br><span style="font-size:11px;color:#888780">{{ b.description }}</span>{% endif %}{% if b.needs_review %} <span class="badge badge-amber">Review</span>{% endif %}</td>
+      <td style="font-weight:500">{{ currency }} ${{ '{:,.2f}'.format(b.amount) }}</td>
+      {% for o in horse.ownerships %}
+        {% for p in b.payments if p.owner_name == o.owner_name %}
+        <td>
+          <div style="font-size:12px">{{ currency }} ${{ '{:,.2f}'.format(p.amount_due) }}</div>
+          <button onclick="togglePay({{ p.id }}, this)" style="margin-top:4px;font-size:11px;padding:2px 8px;border-radius:12px;border:none;cursor:pointer;background:{% if p.paid %}#EAF3DE{% else %}#FCEBEB{% endif %};color:{% if p.paid %}#27500A{% else %}#791F1F{% endif %}">
+            {% if p.paid %}Paid{% else %}Unpaid{% endif %}
+          </button>
+        </td>
+        {% endfor %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state" style="padding:24px"><p>No bills yet. <a href="{{ url_for('add_bill', horse_id=horse.id) }}">Add the first one.</a></p></div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-title">Race results</div>
+  {% if races %}
+  <table>
+    <thead><tr><th>Date</th><th>Track</th><th>Finish</th><th>Purse</th><th>Horse earnings</th>{% for o in horse.ownerships %}<th>{{ o.owner_name }} ({{ o.pct|int }}%)</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for r in races %}
+    {% set he = horse_earnings(r) %}
+    <tr>
+      <td>{{ r.date.strftime('%b %d, %Y') if r.date else '—' }}</td>
+      <td>{{ r.track or '—' }}</td>
+      <td><span class="badge badge-{% if r.finish==1 %}amber{% elif r.finish==2 %}gray{% elif r.finish==3 %}gray{% else %}gray{% endif %}" style="{% if r.finish==1 %}background:#FFD700;color:#7B4F00{% elif r.finish==2 %}background:#C0C0C0;color:#3B3B3B{% elif r.finish==3 %}background:#CD7F32;color:#fff{% endif %}">{{ FINISH_LABEL.get(r.finish, r.finish|string + 'th') }}</span></td>
+      <td>{{ r.currency }} ${{ '{:,.0f}'.format(r.purse) }}</td>
+      <td style="color:#3B6D11;font-weight:500">{{ currency }} ${{ '{:,.2f}'.format(he) }}</td>
+      {% for o in horse.ownerships %}
+      <td style="color:#3B6D11">{{ currency }} ${{ '{:,.2f}'.format(owner_earnings(r, o.pct)) }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state" style="padding:24px"><p>No races yet. <a href="{{ url_for('trackit_settings') }}">Connect TrackIT</a> to sync automatically.</p></div>
+  {% endif %}
+</div>
+
+<div class="card" style="background:#F9FCF5;border-color:#C0DD97">
+  <div class="card-title">Profit / loss per owner</div>
+  <table>
+    <thead><tr><th>Owner</th><th>Share</th><th>Bills owed</th><th>Race winnings</th><th>Net P/L</th></tr></thead>
+    <tbody>
+    {% for o in horse.ownerships %}
+    {% set total_bills = namespace(v=0) %}
+    {% set total_wins  = namespace(v=0) %}
+    {% for b in bills %}{% for p in b.payments if p.owner_name==o.owner_name %}{% set total_bills.v = total_bills.v + p.amount_due %}{% endfor %}{% endfor %}
+    {% for r in races %}{% set total_wins.v = total_wins.v + owner_earnings(r, o.pct) %}{% endfor %}
+    {% set net = total_wins.v - total_bills.v %}
+    <tr>
+      <td style="font-weight:500">{{ o.owner_name }}</td>
+      <td>{{ o.pct|int }}%</td>
+      <td>{{ currency }} ${{ '{:,.2f}'.format(total_bills.v) }}</td>
+      <td style="color:#3B6D11">{{ currency }} ${{ '{:,.2f}'.format(total_wins.v) }}</td>
+      <td style="font-weight:500;color:{% if net >= 0 %}#3B6D11{% else %}#C00000{% endif %}">{{ currency }} ${{ '{:,.2f}'.format(net) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function togglePay(id, btn){
+  fetch(`/payments/${id}/toggle`, {method:'POST', headers:{'Content-Type':'application/json'}})
+    .then(r=>r.json()).then(d=>{
+      btn.textContent = d.paid ? 'Paid' : 'Unpaid';
+      btn.style.background = d.paid ? '#EAF3DE' : '#FCEBEB';
+      btn.style.color      = d.paid ? '#27500A' : '#791F1F';
+    });
+}
+</script>
+{% endblock %}

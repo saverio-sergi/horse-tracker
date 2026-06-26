@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Horses — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+  <div><div class="page-title">Horses</div><div class="page-sub">{{ horses|selectattr('status','eq','active')|list|length }} active</div></div>
+  <a class="btn btn-primary" href="{{ url_for('add_horse') }}">+ Add horse</a>
+</div>
+{% if horses %}
+<div class="card">
+  <table>
+    <thead><tr><th>Name</th><th>Gait</th><th>Foaled</th><th>Owners</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for h in horses %}
+    <tr>
+      <td><a href="{{ url_for('horse_detail', horse_id=h.id) }}" style="font-weight:500">{{ h.name }}</a></td>
+      <td><span class="badge badge-gray">{{ h.gait }}</span></td>
+      <td>{{ h.year_foaled or '—' }}</td>
+      <td style="font-size:12px;color:#5F5E5A">{% for o in h.ownerships %}{{ o.owner_name }} ({{ o.pct|int }}%){% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      <td><span class="badge badge-{{ 'green' if h.status=='active' else 'gray' }}">{{ h.status }}</span></td>
+      <td style="display:flex;gap:6px">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('horse_detail', horse_id=h.id) }}">View</a>
+        {% if h.status=='active' %}
+        <form method="POST" action="{{ url_for('retire_horse', horse_id=h.id) }}"
+              onsubmit="return confirm('Retire {{ h.name }}? All history is kept and they can be restored.')">
+          <button class="btn btn-danger btn-sm" type="submit">Retire</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('restore_horse', horse_id=h.id) }}">
+          <button class="btn btn-secondary btn-sm" type="submit"
+                  style="color:#3B6D11;border-color:#C0DD97">&#x21BA; Restore</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty-state">
+  <p>No horses added yet.</p>
+  <a class="btn btn-primary" href="{{ url_for('add_horse') }}">+ Add your first horse</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Notify owners — {{ horse.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="font-size:13px;color:#888780;margin-bottom:4px"><a href="{{ url_for('schedule') }}">Schedule</a> / Notify owners</div>
+  <div class="page-title">Notify owners — {{ horse.name }}</div>
+</div>
+<div class="card" style="background:#E6F1FB;border-color:#B5D4F4;margin-bottom:16px">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:#0C447C">
+    <span><strong>{{ race.track }}</strong></span>
+    {% if race.race_date %}<span><i class="ti ti-calendar" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> {{ race.race_date.strftime('%A, %B %-d, %Y') }}</span>{% endif %}
+    {% if race.race_number %}<span>Race {{ race.race_number }}</span>{% endif %}
+    {% if race.post_time %}<span><i class="ti ti-clock" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> {{ race.post_time }}</span>{% endif %}
+    {% if race.purse %}<span><i class="ti ti-currency-dollar" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> Purse ${{ '{:,.0f}'.format(race.purse) }}</span>{% endif %}
+    {% if race.driver %}<span><i class="ti ti-user" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> {{ race.driver }}</span>{% endif %}
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="card-title">Choose which owners to email</div>
+    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px;line-height:1.55">
+      Each selected owner receives a personal email with the race details and a link to their stable dashboard.
+      Only owners with an email address saved can be notified.
+    </div>
+    {% for o in horse.ownerships %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid #F1EFE8">
+      <div>
+        <div style="font-size:14px;font-weight:500;color:#1A1A1A">{{ o.owner_name }} <span style="font-size:12px;color:#5F5E5A;font-weight:400">({{ o.pct|int }}%)</span></div>
+        {% if o.owner_email %}
+        <div style="font-size:12px;color:#5F5E5A;margin-top:2px">{{ o.owner_email }}</div>
+        {% else %}
+        <div style="font-size:12px;color:#C00000;margin-top:2px"><i class="ti ti-alert-circle" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> No email address saved</div>
+        {% endif %}
+        {% if o.owner_name in already_notified %}
+        <span class="badge badge-green" style="margin-top:4px"><i class="ti ti-check" style="font-size:10px;margin-right:2px" aria-hidden="true"></i>Previously notified</span>
+        {% endif %}
+      </div>
+      <div>
+        {% if o.owner_email %}
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#1A1A1A">
+          <input type="checkbox" name="notify_owner" value="{{ o.owner_name }}" {% if o.owner_name not in already_notified %}checked{% endif %} style="width:16px;height:16px">
+          Send email
+        </label>
+        {% else %}
+        <span style="font-size:12px;color:#888780">No email</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    <div style="margin-top:16px;padding:12px 14px;background:#F5F7FA;border-radius:8px;font-size:13px;color:#5F5E5A;margin-bottom:16px">
+      <strong style="color:#1A1A1A">Email preview:</strong><br>
+      Subject: <em>Your horse is racing — {{ horse.name }} at {{ race.track }}</em><br>
+      Includes: date, race number, post time, post position, purse, driver, and a link to the app.
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" type="submit">
+        <i class="ti ti-send" style="font-size:13px" aria-hidden="true"></i> Send notifications
+      </button>
+      <a class="btn btn-secondary" href="{{ url_for('schedule') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
