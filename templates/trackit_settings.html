@@ -10,7 +10,7 @@
 <!-- ══ CONNECTED STATE ══ -->
 <div class="card" style="border-color:#C0DD97;background:#F9FCF5">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-    <div style="width:40px;height:40px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px">&#x2714;&#xFE0F;</div>
+    <div style="width:40px;height:40px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px">✅</div>
     <div>
       <div style="font-size:15px;font-weight:500;color:#1A1A1A">Connected as <strong>{{ current_user.trackit_username }}</strong></div>
       <div style="font-size:12px;color:#3B6D11">
@@ -31,7 +31,7 @@
 
   <div style="display:flex;gap:10px;margin-bottom:16px">
     <form method="POST" action="{{ url_for('trackit_sync_now') }}">
-      <button class="btn btn-primary" type="submit">&#x21BA; Sync now</button>
+      <button class="btn btn-primary" type="submit">↺ Sync now</button>
     </form>
     <form method="POST" action="{{ url_for('trackit_disconnect') }}" onsubmit="return confirm('Disconnect TrackIT? You can reconnect at any time.')">
       <button class="btn btn-danger" type="submit">Disconnect</button>
@@ -61,7 +61,7 @@
 <!-- ══ NOT CONNECTED STATE ══ -->
 <div class="card" style="margin-bottom:16px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-    <div style="width:40px;height:40px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888780">&#x1F517;</div>
+    <div style="width:40px;height:40px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888780">🔗</div>
     <div>
       <div style="font-size:15px;font-weight:500">Not connected</div>
       <div style="font-size:12px;color:#888780">Race results must be entered manually</div>
@@ -85,11 +85,11 @@
       <div class="form-group">
         <label class="form-label">TrackIT password</label>
         <input class="form-input" type="password" name="trackit_password" placeholder="Your TrackIT password" required autocomplete="current-password">
-        <div class="form-hint">&#x1F512; Stored securely. Only ever sent to TrackIT's servers.</div>
+        <div class="form-hint">🔒 Stored securely. Only ever sent to TrackIT's servers.</div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
         <button class="btn btn-primary" type="submit">Connect TrackIT account</button>
-        <a href="{{ TRACKIT_FORGOT_URL }}" target="_blank" style="font-size:12px;color:#5F5E5A">Forgot password? &#x2197;</a>
+        <a href="{{ TRACKIT_FORGOT_URL }}" target="_blank" style="font-size:12px;color:#5F5E5A">Forgot password? ↗</a>
       </div>
     </form>
   </div>
@@ -97,7 +97,7 @@
   <!-- CREATE ACCOUNT TAB -->
   <div id="tab-signup" style="display:none">
     <div style="background:#E6F1FB;border-radius:8px;padding:12px 14px;font-size:13px;color:#0C447C;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px">
-      <span>&#x2197;</span>
+      <span>↗</span>
       <span>This opens the Standardbred Canada website in a new tab. Come back here once you have created your account and use the sign-in tab to connect.</span>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
@@ -112,7 +112,7 @@
       {% endfor %}
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a href="https://trackit.standardbredcanada.ca" target="_blank" class="btn btn-primary">Open TrackIT registration &#x2197;</a>
+      <a href="https://trackit.standardbredcanada.ca" target="_blank" class="btn btn-primary">Open TrackIT registration ↗</a>
       <button class="btn btn-secondary" onclick="showTab('login')">I have created my account — sign in</button>
     </div>
   </div>

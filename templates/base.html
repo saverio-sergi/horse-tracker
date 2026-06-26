@@ -65,7 +65,7 @@ tr:hover td{background:#FAFAF8}
 <body>
 {% if current_user.is_authenticated %}
 <nav class="nav">
-  <div class="nav-brand">&#x1F40E; Harness Horse Tracker</div>
+  <div class="nav-brand">🐎 Harness Horse Tracker</div>
   <div class="nav-links">
     <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
     <a class="nav-link {% if 'horse' in (request.endpoint or '') %}active{% endif %}" href="{{ url_for('horses') }}">Horses</a>
