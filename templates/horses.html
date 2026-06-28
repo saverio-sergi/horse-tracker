@@ -16,7 +16,12 @@
       <td><span class="badge badge-gray">{{ h.gait }}</span></td>
       <td>{{ h.year_foaled or '—' }}</td>
       <td style="font-size:12px;color:#5F5E5A">{% for o in h.ownerships %}{{ o.owner_name }} ({{ o.pct|int }}%){% if not loop.last %}<br>{% endif %}{% endfor %}</td>
-      <td><span class="badge badge-{{ 'green' if h.status=='active' else 'gray' }}">{{ h.status }}</span></td>
+      <td>
+        <span class="badge badge-{{ 'green' if h.status=='active' else 'gray' }}">{{ h.status }}</span>
+        {% if h.status == 'active' and not h.trackmaster_confirmed %}
+        <span class="badge" style="background:#FEF6E8;color:#7A4F00;border:1px solid #E8C46A;margin-left:4px" title="Add this horse to TrackMaster Virtual Stable to receive automatic race entry alerts">&#x1F3C7; TrackMaster needed</span>
+        {% endif %}
+      </td>
       <td style="display:flex;gap:6px">
         <a class="btn btn-secondary btn-sm" href="{{ url_for('horse_detail', horse_id=h.id) }}">View</a>
         {% if h.status=='active' %}

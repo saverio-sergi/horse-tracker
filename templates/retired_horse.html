@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ horse.name }} retired — {{ current_user.stable_name }}{% endblock %}
+{% block content %}
+<div style="max-width:640px;margin:0 auto">
+
+  <!-- Confirmation header -->
+  <div style="background:#EAF3DE;border:1px solid #C0DD97;border-radius:12px;padding:20px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
+    <div style="font-size:28px;flex-shrink:0">✅</div>
+    <div>
+      <div style="font-size:16px;font-weight:600;color:#1F3A1F;margin-bottom:4px">{{ horse.name }} has been retired</div>
+      <div style="font-size:13px;color:#3A6A3A;line-height:1.6">
+        All history is preserved — bills, races, and P/L are still there to review.
+        Upcoming race entries for this horse have been cleared from your schedule.
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-step stop guide -->
+  <div style="background:#fff;border:1px solid #E8C46A;border-radius:12px;overflow:hidden;margin-bottom:20px">
+
+    <div style="background:#FEF6E8;padding:16px 20px;border-bottom:1px solid #E8C46A;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🏇</div>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#7A4F00">Stop the entry alerts for {{ horse.name }}</div>
+        <div style="font-size:12px;color:#9A6910;margin-top:2px">Two quick steps — takes about 60 seconds total</div>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div style="padding:18px 20px;border-bottom:1px solid #F0E8D0">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:#B8872E;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#1A1A1A;margin-bottom:5px">Remove {{ horse.name }} from TrackMaster Virtual Stable</div>
+          <div style="font-size:13px;color:#5A6478;line-height:1.6;margin-bottom:12px">
+            This stops TrackMaster from sending entry notification emails for this horse.
+            Without this step, emails will keep arriving even though the horse is no longer in your stable.
+          </div>
+          <div style="background:#F8F5F0;border-radius:8px;padding:10px 14px;font-size:12px;color:#5A6478;line-height:1.8;margin-bottom:12px">
+            1. Go to TrackMaster Virtual Stable<br>
+            2. Find <strong>{{ horse.name }}</strong> in your stable list<br>
+            3. Click <strong>Remove</strong> or <strong>Delete</strong> next to their name
+          </div>
+          <a href="https://www.trackmaster.com/products/harness/virtual_stable"
+             target="_blank" rel="noopener"
+             style="display:inline-flex;align-items:center;gap:6px;background:#B8872E;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:7px;text-decoration:none">
+            Open TrackMaster Virtual Stable &#x2197;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="padding:18px 20px">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:#185FA5;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#1A1A1A;margin-bottom:5px">Your app already stops scanning automatically</div>
+          <div style="font-size:13px;color:#5A6478;line-height:1.6;margin-bottom:10px">
+            The scanner in your app now ignores any TrackMaster entry emails that arrive for
+            <strong>{{ horse.name }}</strong> — even if you miss removing them from TrackMaster.
+            Retired horses are filtered out automatically so your schedule stays clean.
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#E6F1FB;border-radius:8px;padding:10px 14px;font-size:12px;color:#0C447C">
+            <span>&#x2713;</span>
+            <span>No action needed in the app — this is already handled for you</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- What about TrackIT? -->
+  <div style="background:#fff;border:1px solid #D3D1C7;border-radius:12px;padding:16px 20px;margin-bottom:20px">
+    <div style="font-size:13px;font-weight:600;color:#1A1A1A;margin-bottom:8px;display:flex;align-items:center;gap:7px">
+      <span>&#x1F504;</span> What about TrackIT?
+    </div>
+    <div style="font-size:13px;color:#5A6478;line-height:1.65">
+      You don't need to do anything in TrackIT. The race updater only syncs horses that are
+      active in your stable — retired horses are automatically skipped on the next sync.
+      All past race history for {{ horse.name }} is preserved in your account.
+    </div>
+  </div>
+
+  <!-- If horse comes back -->
+  <div style="background:#F9FCFF;border:1px solid #B5D4F4;border-radius:12px;padding:16px 20px;margin-bottom:24px">
+    <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:6px;display:flex;align-items:center;gap:7px">
+      <span>&#x1F504;</span> If you buy {{ horse.name }} back later
+    </div>
+    <div style="font-size:13px;color:#185FA5;line-height:1.65">
+      Use the <strong>Restore</strong> button on the horses page. A new ownership period will open,
+      TrackIT will re-sync any new races, and you'll see a reminder to re-add the horse to
+      TrackMaster Virtual Stable so entry alerts start flowing again.
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{{ url_for('horses') }}"
+       style="display:inline-flex;align-items:center;gap:6px;background:#1F3A5F;color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;text-decoration:none">
+      Back to my horses
+    </a>
+    <a href="{{ url_for('horse_detail', horse_id=horse.id) }}"
+       style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#1A1A1A;border:1px solid #D3D1C7;font-size:13px;font-weight:500;padding:10px 20px;border-radius:8px;text-decoration:none">
+      View {{ horse.name }}'s history
+    </a>
+  </div>
+
+</div>
+{% endblock %}

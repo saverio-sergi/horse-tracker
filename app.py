@@ -52,6 +52,7 @@ class Horse(db.Model):
     gait       = db.Column(db.String(20), default='Pacer')
     year_foaled= db.Column(db.Integer)
     status     = db.Column(db.String(20), default='active')
+    trackmaster_confirmed = db.Column(db.Boolean, default=False)  # user confirmed horse added to TrackMaster
     purchase_price = db.Column(db.Float)
     purchase_date  = db.Column(db.Date)
     purchase_type  = db.Column(db.String(50))
@@ -674,6 +675,13 @@ def parse_trackmaster_email(subject, body, user_horses):
     if not matched_horse:
         return None   # can't assign race to a horse we don't know
 
+    # Skip entry emails for horses that are no longer in the stable
+    if matched_horse.status != 'active':
+        app.logger.info(
+            f'Skipping TrackMaster entry email for retired horse: {matched_horse.name}'
+        )
+        return None   # horse is retired — ignore entry, don't add to schedule
+
     result['horse_id'] = matched_horse.id
 
     # Parse body fields
@@ -987,10 +995,16 @@ def add_horse():
         db.session.commit()
         # Automatically search TrackIT and log TrackMaster guidance
         sync_results = sync_horse_on_add(horse, current_user)
-        flash(f'{name} added! Checking TrackIT and TrackMaster...', 'success')
+        flash(f'{name} added! Checking TrackIT for past races...', 'success')
         for msg in sync_results:
             category = 'success' if 'imported' in msg or 'found' in msg else 'info'
             flash(msg, category)
+        flash(
+            f'Action needed: Add {name} to your TrackMaster Virtual Stable '
+            f'so upcoming race entries are detected automatically. '
+            f'See the reminder banner on this horse\'s page.',
+            'warning'
+        )
         return redirect(url_for('horse_detail', horse_id=horse.id))
     return render_template('add_horse.html')
 
@@ -1017,6 +1031,7 @@ def horse_detail(horse_id):
 def retire_horse(horse_id):
     horse = Horse.query.filter_by(id=horse_id, user_id=current_user.id).first_or_404()
     horse.status = 'retired'
+    horse.trackmaster_confirmed = False  # reset so restore re-shows the reminder
 
     # Close the active ownership period on the sale date
     active_period = get_active_period(horse)
@@ -1039,8 +1054,10 @@ def retire_horse(horse_id):
     if cancelled:
         msg += f' {cancelled} upcoming race entr{"y" if cancelled==1 else "ies"} removed.'
     flash(msg, 'success')
-    flash(f'Remember to remove {horse.name} from your TrackMaster Virtual Stable so you stop receiving entry emails for them.', 'info')
-    return redirect(url_for('horses'))
+    # Two-step action notice — stored in session so horse_detail can show it as a banner
+    from flask import session as _sess
+    _sess[f'retired_trackmaster_{horse.id}'] = True
+    return redirect(url_for('retired_horse_page', horse_id=horse.id))
 
 
 @app.route('/horses/<int:horse_id>/restore', methods=['POST'])
@@ -1152,6 +1169,27 @@ def manage_periods(horse_id):
 
     return render_template('manage_periods.html', horse=horse,
                            active_period=get_active_period(horse))
+
+
+@app.route('/horses/<int:horse_id>/trackmaster-confirm', methods=['POST'])
+@login_required
+def confirm_trackmaster(horse_id):
+    """User confirms they have added this horse to TrackMaster Virtual Stable."""
+    horse = Horse.query.filter_by(id=horse_id, user_id=current_user.id).first_or_404()
+    horse.trackmaster_confirmed = True
+    db.session.commit()
+    flash(f'{horse.name} marked as added to TrackMaster. Entry alerts will now flow automatically.', 'success')
+    return redirect(url_for('horse_detail', horse_id=horse_id))
+
+
+@app.route('/horses/<int:horse_id>/retired')
+@login_required
+def retired_horse_page(horse_id):
+    """Shown immediately after retiring a horse — guides the user through stopping emails."""
+    horse = Horse.query.filter_by(id=horse_id, user_id=current_user.id).first_or_404()
+    from flask import session as _sess
+    show_guide = _sess.pop(f'retired_trackmaster_{horse.id}', False)
+    return render_template('retired_horse.html', horse=horse, show_guide=show_guide)
 
 # ══════════════════════════════════════════════════════════════
 # BILLS
