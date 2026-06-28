@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Import races — {{ horse.name }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+
+  <div style="font-size:13px;color:#888780;margin-bottom:6px">
+    <a href="{{ url_for('horse_detail', horse_id=horse.id) }}">{{ horse.name }}</a> / Import races
+  </div>
+  <div class="page-title" style="margin-bottom:4px">Import race history — {{ horse.name }}</div>
+  <div class="page-sub" style="margin-bottom:24px">
+    While automatic TrackIT sync is being confirmed, use one of these three methods to bring in past races.
+    {% if existing %}<strong>{{ existing }} race{{ 's' if existing != 1 else '' }}</strong> already in the system — duplicates are skipped automatically.{% endif %}
+  </div>
+
+  <!-- HOW TO GET THE DATA FROM TRACKIT -->
+  <div style="background:#E6F1FB;border:1px solid #B5D4F4;border-radius:10px;padding:16px 18px;margin-bottom:24px">
+    <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:10px;display:flex;align-items:center;gap:7px">
+      📋 How to copy your race history from TrackIT
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      {% for n, step in [
+        ('1', 'Log into TrackIT at trackit.standardbredcanada.ca'),
+        ('2', 'Search for your horse by name'),
+        ('3', 'Open their racelines / past performance page'),
+        ('4', 'Select all the text on the page (Ctrl+A on Windows, Cmd+A on Mac)'),
+        ('5', 'Copy it (Ctrl+C / Cmd+C)'),
+        ('6', 'Paste it into the box below and click Import'),
+      ] %}
+      <div style="display:flex;gap:10px;font-size:13px;color:#185FA5;align-items:flex-start">
+        <div style="width:20px;height:20px;border-radius:50%;background:#185FA5;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ n }}</div>
+        <div>{{ step }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TAB SWITCHER -->
+  <div style="display:flex;gap:0;border-bottom:1px solid #D3D1C7;margin-bottom:20px">
+    <button class="import-tab active-tab" onclick="showTab('paste')"
+            style="font-size:13px;font-weight:500;padding:9px 18px;cursor:pointer;border:none;background:none;color:#1A1A1A;border-bottom:2px solid #1F3A5F">
+      📋 Paste from TrackIT
+    </button>
+    <button class="import-tab" onclick="showTab('csv')"
+            style="font-size:13px;font-weight:500;padding:9px 18px;cursor:pointer;border:none;background:none;color:#5A6478;border-bottom:2px solid transparent">
+      📄 Upload CSV
+    </button>
+    <button class="import-tab" onclick="showTab('manual')"
+            style="font-size:13px;font-weight:500;padding:9px 18px;cursor:pointer;border:none;background:none;color:#5A6478;border-bottom:2px solid transparent">
+      ✏️ Enter manually
+    </button>
+  </div>
+
+  <!-- PASTE TAB -->
+  <div id="tab-paste">
+    <div class="card">
+      <div class="card-title">Paste your TrackIT racelines</div>
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="paste">
+        <div class="form-group">
+          <label class="form-label">Paste the copied text from TrackIT here</label>
+          <textarea name="paste_text" rows="12"
+                    style="width:100%;padding:10px 12px;border:0.5px solid #D3D1C7;border-radius:8px;font-family:monospace;font-size:12px;resize:vertical;line-height:1.5"
+                    placeholder="Paste your TrackIT racelines here...
+
+The app will automatically find the dates, tracks, finish positions, and purses.
+It doesn't matter if there's extra header text — just paste everything."></textarea>
+          <div class="form-hint">Don't worry about formatting — paste everything and the app figures out the races automatically. Duplicates are skipped.</div>
+        </div>
+        <button class="btn btn-primary" type="submit">Import races from pasted text</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CSV TAB -->
+  <div id="tab-csv" style="display:none">
+    <div class="card">
+      <div class="card-title">Upload a CSV file</div>
+      <div style="background:#F8F5F0;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#5A6478;line-height:1.7">
+        <strong style="color:#1A1A1A">CSV format:</strong> one race per row with these columns in order:<br>
+        <code style="font-family:monospace;font-size:12px;background:#E8E6E1;padding:2px 6px;border-radius:4px">date, track, finish, purse, time (optional), race name (optional)</code><br><br>
+        <strong>Date formats accepted:</strong> YYYY-MM-DD, MM/DD/YYYY, MM/DD/YY<br>
+        <strong>Example row:</strong> <code style="font-family:monospace;font-size:12px;background:#E8E6E1;padding:2px 6px;border-radius:4px">2026-06-07, Batavia Downs, 1, 4200, 1:53.2, Spring Classic</code>
+      </div>
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="csv">
+        <div class="form-group">
+          <label class="form-label">Select your CSV file</label>
+          <input type="file" name="csv_file" accept=".csv,.txt"
+                 style="width:100%;padding:8px;border:0.5px solid #D3D1C7;border-radius:8px;font-size:13px">
+        </div>
+        <button class="btn btn-primary" type="submit">Import from CSV</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MANUAL TAB -->
+  <div id="tab-manual" style="display:none">
+    <div class="card">
+      <div class="card-title">Add a single race</div>
+      <form method="POST">
+        <input type="hidden" name="action" value="manual">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Race date *</label>
+            <input class="form-input" type="date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Track / venue *</label>
+            <input class="form-input" type="text" name="track" placeholder="e.g. Batavia Downs" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Finish position</label>
+            <select class="form-select" name="finish">
+              <option value="0">Not in money / unknown</option>
+              <option value="1">1st</option>
+              <option value="2">2nd</option>
+              <option value="3">3rd</option>
+              <option value="4">4th</option>
+              <option value="5">5th</option>
+              {% for i in range(6,13) %}<option value="{{ i }}">{{ i }}th</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Purse ({{ currency }})</label>
+            <input class="form-input" type="number" name="purse" placeholder="e.g. 4200" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Winning time</label>
+            <input class="form-input" type="text" name="time_str" placeholder="e.g. 1:53.2">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Race name</label>
+            <input class="form-input" type="text" name="race_name" placeholder="e.g. Spring Classic">
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Add this race</button>
+      </form>
+    </div>
+
+    {% set races = horse.races | sort(attribute='date', reverse=True) %}
+    {% if races %}
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">Races already in the system — {{ races | length }}</div>
+      <table>
+        <thead><tr><th>Date</th><th>Track</th><th>Finish</th><th>Purse</th></tr></thead>
+        <tbody>
+        {% for r in races[:10] %}
+        <tr>
+          <td>{{ r.date.strftime('%b %-d, %Y') if r.date else '—' }}</td>
+          <td>{{ r.track }}</td>
+          <td>{% if r.finish == 1 %}<span style="background:#FFD700;color:#7B4F00;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600">1st</span>
+              {% elif r.finish == 2 %}<span style="background:#C0C0C0;color:#3B3B3B;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600">2nd</span>
+              {% elif r.finish == 3 %}<span style="background:#CD7F32;color:#fff;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600">3rd</span>
+              {% elif r.finish > 0 %}<span style="background:#F1EFE8;color:#5A6478;padding:1px 7px;border-radius:10px;font-size:11px">{{ r.finish }}th</span>
+              {% else %}—{% endif %}
+          </td>
+          <td>{{ r.currency }} ${{ '{:,.0f}'.format(r.purse) }}</td>
+        </tr>
+        {% endfor %}
+        {% if races | length > 10 %}<tr><td colspan="4" style="font-size:12px;color:#888780;text-align:center">+ {{ (races | length) - 10 }} more</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="margin-top:16px">
+    <a class="btn btn-secondary" href="{{ url_for('horse_detail', horse_id=horse.id) }}">
+      ← Back to {{ horse.name }}
+    </a>
+  </div>
+
+</div>
+
+<script>
+function showTab(id){
+  ['paste','csv','manual'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.import-tab').forEach((btn,i)=>{
+    const active = (['paste','csv','manual'][i]) === id;
+    btn.style.color    = active ? '#1A1A1A' : '#5A6478';
+    btn.style.borderBottomColor = active ? '#1F3A5F' : 'transparent';
+  });
+}
+</script>
+{% endblock %}

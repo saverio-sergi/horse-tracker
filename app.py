@@ -1191,6 +1191,244 @@ def retired_horse_page(horse_id):
     show_guide = _sess.pop(f'retired_trackmaster_{horse.id}', False)
     return render_template('retired_horse.html', horse=horse, show_guide=show_guide)
 
+
+# ══════════════════════════════════════════════════════════════
+# TRACKIT MANUAL IMPORT
+# ══════════════════════════════════════════════════════════════
+@app.route('/horses/<int:horse_id>/import-races', methods=['GET','POST'])
+@login_required
+def import_races(horse_id):
+    """
+    Manual race import page — three paths:
+      1. Paste raw TrackIT raceline text (auto-parsed)
+      2. Upload a CSV file
+      3. Single race manual entry form
+    """
+    horse = Horse.query.filter_by(id=horse_id, user_id=current_user.id).first_or_404()
+
+    if request.method == 'POST':
+        action = request.form.get('action','manual')
+
+        if action == 'paste':
+            raw = request.form.get('paste_text','').strip()
+            races = _parse_trackit_paste(raw)
+            if not races:
+                flash('Could not read any races from the pasted text. '
+                      'Try copying the full racelines table from TrackIT.', 'error')
+                return redirect(url_for('import_races', horse_id=horse_id))
+            added = _save_imported_races(races, horse, current_user.currency)
+            flash(f'{added} race{"s" if added!=1 else ""} imported successfully.', 'success')
+            return redirect(url_for('horse_detail', horse_id=horse_id))
+
+        elif action == 'csv':
+            f_obj = request.files.get('csv_file')
+            if not f_obj or not f_obj.filename:
+                flash('Please select a CSV file to upload.', 'error')
+                return redirect(url_for('import_races', horse_id=horse_id))
+            content = f_obj.read().decode('utf-8', errors='replace')
+            races = _parse_csv_import(content)
+            if not races:
+                flash('Could not read any races from the CSV. '
+                      'Check the format matches the template.', 'error')
+                return redirect(url_for('import_races', horse_id=horse_id))
+            added = _save_imported_races(races, horse, current_user.currency)
+            flash(f'{added} race{"s" if added!=1 else ""} imported from CSV.', 'success')
+            return redirect(url_for('horse_detail', horse_id=horse_id))
+
+        elif action == 'manual':
+            date_str  = request.form.get('date','').strip()
+            track     = request.form.get('track','').strip()
+            finish    = request.form.get('finish','0').strip()
+            purse     = request.form.get('purse','0').strip()
+            race_name = request.form.get('race_name','').strip()
+            time_str  = request.form.get('time_str','').strip()
+            if not date_str or not track:
+                flash('Date and track are required.', 'error')
+                return redirect(url_for('import_races', horse_id=horse_id))
+            try:
+                race_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                race = Race(
+                    horse_id  = horse.id,
+                    date      = race_date,
+                    track     = track,
+                    race_name = race_name,
+                    finish    = int(re.sub(r'\D','',finish) or '0'),
+                    purse     = float(re.sub(r'[^\d.]','',purse) or '0'),
+                    time_str  = time_str,
+                    currency  = current_user.currency,
+                )
+                assign_race_to_period(race, horse)
+                db.session.add(race)
+                db.session.commit()
+                flash('Race added successfully.', 'success')
+            except Exception as e:
+                flash(f'Could not save race: {e}', 'error')
+            return redirect(url_for('import_races', horse_id=horse_id))
+
+    existing = Race.query.filter_by(horse_id=horse_id).count()
+    return render_template('import_races.html', horse=horse,
+                           existing=existing, currency=current_user.currency)
+
+
+def _parse_trackit_paste(text):
+    """
+    Parse raw text copied from a TrackIT racelines page.
+
+    TrackIT displays racelines in a table. When a user selects all and copies,
+    they get tab- or space-separated rows. We try to find rows that look like:
+      date  track  conditions  finish  time  purse  ...
+
+    Also handles common date formats: MM/DD/YY, MM/DD/YYYY, YYYY-MM-DD
+    """
+    import csv, io
+    races = []
+    seen  = set()
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        # Split on tabs first, fall back to multiple spaces
+        if '\t' in line:
+            parts = [p.strip() for p in line.split('\t')]
+        else:
+            parts = [p.strip() for p in re.split(r'  +', line)]
+
+        if len(parts) < 4:
+            continue
+
+        # Try to find the date in any of the first 3 columns
+        race_date = None
+        date_col  = -1
+        for i, part in enumerate(parts[:3]):
+            for fmt in ('%m/%d/%y','%m/%d/%Y','%Y-%m-%d','%d/%m/%Y'):
+                try:
+                    race_date = datetime.strptime(part, fmt).date()
+                    date_col  = i
+                    break
+                except ValueError:
+                    pass
+            if race_date:
+                break
+
+        if not race_date:
+            continue
+
+        # Columns after date: track, conditions/class, finish, time, purse
+        rest = parts[date_col+1:]
+        if len(rest) < 3:
+            continue
+
+        track     = rest[0] if rest else ''
+        # finish is the first field that looks like a number (1-10) or "1st" etc
+        finish    = 0
+        purse     = 0.0
+        time_str  = ''
+
+        for col in rest[1:]:
+            clean = re.sub(r'[^\d]','', col)
+            # Finish position: 1-digit or 2-digit number ≤ 12
+            if not finish and clean and 1 <= int(clean or 0) <= 12 and len(clean) <= 2:
+                finish = int(clean)
+            # Time: looks like 1:52.1 or 152.1
+            elif re.match(r'^\d[:.]\d{2}\.\d$', col) or re.match(r'^1:\d{2}\.\d$', col):
+                time_str = col
+            # Purse: larger number with optional $ or commas
+            elif clean and int(clean or 0) > 100:
+                try:
+                    purse = float(re.sub(r'[^\d.]', '', col))
+                except:
+                    pass
+
+        if purse == 0:
+            continue   # skip rows with no purse — likely headers
+
+        key = (race_date, track)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        races.append({
+            'date': race_date, 'track': track,
+            'finish': finish, 'purse': purse, 'time_str': time_str,
+        })
+
+    return races
+
+
+def _parse_csv_import(content):
+    """
+    Parse a CSV with columns: date, track, finish, purse[, time, race_name]
+    Accepts header row or no header row.
+    """
+    import csv, io
+    races = []
+    seen  = set()
+    reader = csv.reader(io.StringIO(content))
+    for row in reader:
+        if len(row) < 4:
+            continue
+        # Skip obvious header rows
+        if row[0].strip().lower() in ('date','race date','d'):
+            continue
+        try:
+            date_raw = row[0].strip()
+            race_date = None
+            for fmt in ('%Y-%m-%d','%m/%d/%Y','%m/%d/%y','%d/%m/%Y'):
+                try:
+                    race_date = datetime.strptime(date_raw, fmt).date()
+                    break
+                except ValueError:
+                    pass
+            if not race_date:
+                continue
+            track   = row[1].strip()
+            finish  = int(re.sub(r'\D','', row[2].strip()) or '0')
+            purse   = float(re.sub(r'[^\d.]','', row[3].strip()) or '0')
+            time_str = row[4].strip() if len(row) > 4 else ''
+            race_name= row[5].strip() if len(row) > 5 else ''
+            if purse == 0:
+                continue
+            key = (race_date, track)
+            if key in seen:
+                continue
+            seen.add(key)
+            races.append({'date':race_date,'track':track,'finish':finish,
+                          'purse':purse,'time_str':time_str,'race_name':race_name})
+        except Exception:
+            continue
+    return races
+
+
+def _save_imported_races(races, horse, currency):
+    """Save a list of parsed race dicts to the database, skipping duplicates."""
+    added = 0
+    existing_keys = {
+        (r.date, r.track)
+        for r in Race.query.filter_by(horse_id=horse.id).all()
+    }
+    for r in races:
+        key = (r['date'], r.get('track',''))
+        if key in existing_keys:
+            continue
+        race = Race(
+            horse_id  = horse.id,
+            date      = r['date'],
+            track     = r.get('track',''),
+            race_name = r.get('race_name',''),
+            finish    = r.get('finish', 0),
+            purse     = r.get('purse', 0.0),
+            time_str  = r.get('time_str',''),
+            currency  = r.get('currency', currency),
+        )
+        assign_race_to_period(race, horse)
+        db.session.add(race)
+        existing_keys.add(key)
+        added += 1
+    db.session.commit()
+    return added
+
 # ══════════════════════════════════════════════════════════════
 # BILLS
 # ══════════════════════════════════════════════════════════════

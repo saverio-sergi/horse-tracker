@@ -59,6 +59,7 @@
 
 {% else %}
 <!-- ══ NOT CONNECTED STATE ══ -->
+  <!-- Manual import notice -->
 <div class="card" style="margin-bottom:16px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <div style="width:40px;height:40px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888780">🔗</div>
@@ -117,6 +118,20 @@
     </div>
   </div>
 </div>
+
+  <!-- Manual import fallback -->
+  <div style="background:#F8F5F0;border:1px solid #D3D1C7;border-radius:10px;padding:14px 16px;margin-top:12px">
+    <div style="font-size:13px;font-weight:600;color:#1A1A1A;margin-bottom:6px;display:flex;align-items:center;gap:7px">
+      📥 Import race history manually in the meantime
+    </div>
+    <div style="font-size:13px;color:#5A6478;line-height:1.6;margin-bottom:10px">
+      While you set up TrackIT, you can bring in past race results by copying them directly
+      from the TrackIT website. Go to any horse's page and click <strong>Import races</strong>
+      to paste your racelines, upload a CSV, or enter races one at a time.
+    </div>
+    <a href="{{ url_for('horses') }}"
+       style="font-size:12px;color:#185FA5;text-decoration:none">Go to my horses to import races →</a>
+  </div>
 
 <!-- What is TrackIT info box -->
 <div class="card" style="background:#F9FCFF;border-color:#B5D4F4">
